@@ -18,6 +18,8 @@ entity Casa is
     chuva: in  std_logic;
     temp1: in  integer range -20 to 50;
     temp2: in  integer range -20 to 50;
+    nivelAguaA: std_logic_vector(3 downto 0); 
+    AguaB: in std_logic;
     
     -- Saídas para os LEDs de alerta
     alertaPortaJanela: out std_logic;
@@ -26,7 +28,8 @@ entity Casa is
     alertaNoiteJanela: out std_logic;
     alertaTemperatura: out std_logic;
     alertaBomba: out std_logic;
-    alertaEletrovalvula: out std_logic
+    alertaEletrovalvula: out std_logic;
+    alertaCaixaB: out std_logic
   );
 end Casa;
 
@@ -35,7 +38,7 @@ architecture Behavioral of Casa is
 begin
 
   process (janela1, janela2, janela3, porta, portaTrancada, modoSeguro,
-           crepuscular, chuva, temp1, temp2)
+           crepuscular, chuva, temp1, temp2, nivelAguaA, AguaB)
   begin
     -- Verifica se alguma janela está aberta e o modo seguro está ativado
     if (modoSeguro = '1' and (janela1 = '1' or janela2 = '1' or janela3 = '1')) then
@@ -73,8 +76,16 @@ begin
     end if;
 
     -- Verifica o nível de água na caixa A
-    if (nivelAguaA < 20) then
-      alertaBomba <= '0'; -- Desliga
-    end if;
+    if (NivelAguaA(0) = '0') then 	
+        alertaBomba <= '0'; -- Liga
+        alertaEletrovalvula <= '1'; 
+      end if;
+
+    -- Verifica se a caixa de água B está cheia
+    if (AguaB = '1') then 		
+        alertaCaixaB <= '0'; -- Desliga
+        alertaBomba <= '0';
+
+      end if;
  end process;
 end architecture;
