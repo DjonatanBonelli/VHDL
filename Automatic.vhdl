@@ -7,11 +7,11 @@ entity Casa is
     janela1 : in  std_logic;
     janela2 : in  std_logic;
     janela3 : in  std_logic;
-    porta   : in  std_logic;
+    porta: in  std_logic;
     portaTrancada : in  std_logic;
     
     -- Botão do modo seguro
-    modoSeguro : in  std_logic;
+    modoSeguro: in  std_logic;
     
     -- Sensores adicionais
     crepuscular : in  std_logic;
@@ -64,14 +64,7 @@ begin
     else
       alertaNoiteJanela <= '0';
     end if;
-    
-   -- Sinal de alerta para temperatura abaixo de 15° e janelas abertas
-        if (temperatura1 < 15 or temperatura2 < 15) and (janela1 = '1' or janela2 = '1' or janela3 = '1') then
-            alertaTemperatura <= '1';
-        else
-            alertaTemperatura <= '0';
-        end if;
-        
+
     -- Verifica se alguma janela está aberta e a temperatura está abaixo de 15°C
     if ((janela1 = '1' or janela2 = '1' or janela3 = '1') and (temp1 < 15 or temp2 < 15)) then
       alertaJanela <= '1';
