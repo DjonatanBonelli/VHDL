@@ -77,14 +77,14 @@ begin
 
     -- Verifica o nível de água na caixa A
     if (NivelAguaA(0) = '0') then 	
-        alertaBomba <= '0'; -- Liga
-        alertaEletrovalvula <= '1'; 
+        alertaBomba <= '0'; -- Não liga a bomba
+        alertaEletrovalvula <= '1'; -- Liga a eletrovalvula
       end if;
 
     -- Verifica se a caixa de água B está cheia
     if (AguaB = '1') then 		
-        alertaCaixaB <= '0'; -- Desliga
-        alertaBomba <= '0';
+        alertaCaixaB <= '0';    -- Alerta que está cheia
+        alertaBomba <= '0';	-- Desliga a bomba
 
       end if;
  end process;
