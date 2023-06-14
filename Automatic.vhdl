@@ -2,31 +2,31 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity Casa is
-  Port (
+  port (
     -- Sensores das janelas e da porta
-    janela1 : in  std_logic;
-    janela2 : in  std_logic;
-    janela3 : in  std_logic;
-    porta: in  std_logic;
-    portaTrancada : in  std_logic;
+    janela1: in std_logic;
+    janela2: in std_logic;
+    janela3: in std_logic;
+    porta: in std_logic;
+    portaTrancada: in std_logic;
     
     -- Botão do modo seguro
     modoSeguro: in  std_logic;
     
     -- Sensores adicionais
-    crepuscular : in  std_logic;
-    chuva       : in  std_logic;
-    temperatura1       : in  integer range -20 to 50;
-    temperatura2       : in  integer range -20 to 50;
+    crepuscular: in  std_logic;
+    chuva: in  std_logic;
+    temp1: in  integer range -20 to 50;
+    temp2: in  integer range -20 to 50;
     
     -- Saídas para os LEDs de alerta
-    alertaPortaJanela : out std_logic;
-    alertaJanela     : out std_logic;
-    alertaChuva      : out std_logic;
+    alertaPortaJanela: out std_logic;
+    alertaJanela: out std_logic;
+    alertaChuva: out std_logic;
     alertaNoiteJanela: out std_logic;
     alertaTemperatura: out std_logic;
-    alertaBomba      : out std_logic;
-    alertaEletrovalvula : out std_logic
+    alertaBomba: out std_logic;
+    alertaEletrovalvula: out std_logic
   );
 end Casa;
 
