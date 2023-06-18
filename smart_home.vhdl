@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 entity Casa is
   port (
@@ -16,9 +17,9 @@ entity Casa is
     -- Sensores adicionais
     crepuscular: in  std_logic;
     chuva: in  std_logic;
-    temp1: in  integer range -20 to 50;
-    temp2: in  integer range -20 to 50;
-    nivelAguaA: std_logic_vector(3 downto 0); 
+    temp1: in std_logic_vector(5 downto 0);
+    temp2: in std_logic_vector(5 downto 0);
+    nivelAguaA: in std_logic_vector(3 downto 0); 
     AguaB: in std_logic;
     
     -- Saídas para os LEDs de alerta
@@ -29,22 +30,32 @@ entity Casa is
     alertaTemperatura: out std_logic;
     alertaBomba: out std_logic;
     alertaEletrovalvula: out std_logic;
-    alertaCaixaB: out std_logic
+    alertaCaixaB: out std_logic;
+    alertaPorta: out std_logic
   );
 end Casa;
 
 architecture Behavioral of Casa is
+  signal alertaBombaInterno : std_logic := '1';
 
 begin
+  alertaBomba <= alertaBombaInterno;	
 
   process (janela1, janela2, janela3, porta, portaTrancada, modoSeguro,
            crepuscular, chuva, temp1, temp2, nivelAguaA, AguaB)
   begin
     -- Verifica se alguma janela está aberta e o modo seguro está ativado
-    if (modoSeguro = '1' and (janela1 = '1' or janela2 = '1' or janela3 = '1')) then
+    if (modoSeguro = '1' and ((janela1 = '1' or janela2 = '1' or janela3 = '1') or (porta = '1' and portaTrancada = '0'))) then
       alertaPortaJanela <= '1';
     else
       alertaPortaJanela <= '0';
+    end if;
+
+    -- Verifica porta trancada mas aberta
+    if (porta = '1' and portaTrancada = '0') then
+      alertaPorta <= '1';
+    else
+      alertaPorta <= '0';
     end if;
 
     -- Verifica se alguma janela está aberta
@@ -69,23 +80,33 @@ begin
     end if;
 
     -- Verifica se alguma janela está aberta e a temperatura está abaixo de 15°C
-    if ((janela1 = '1' or janela2 = '1' or janela3 = '1') and (temp1 < 15 or temp2 < 15)) then
-      alertaJanela <= '1';
+    if ((janela1 = '1' or janela2 = '1' or janela3 = '1') and ((to_integer(unsigned(temp1)) < 15) or (to_integer(unsigned(temp2)) < 15)))then
+      alertaTemperatura <= '1';
     else
-      alertaJanela <= '0';
+      alertaTemperatura <= '0';
     end if;
 
-    -- Verifica o nível de água na caixa A
-    if (NivelAguaA(0) = '0') then 	
-        alertaBomba <= '0'; -- Não liga a bomba
-        alertaEletrovalvula <= '1'; -- Liga a eletrovalvula
-      end if;
+    -- Liga a eletroválvula
+    if (nivelAguaA = "0001" or nivelAguaA = "0000") then
+      alertaEletrovalvula <= '1';
+    else
+      alertaEletrovalvula <= '0';
+    end if;
+
+    -- Liga a bomba
+    if(nivelAguaA = "0000") then
+       alertaBombaInterno <= '0';
+    else
+      alertaBombaInterno <= '1';
+    end if;
 
     -- Verifica se a caixa de água B está cheia
     if (AguaB = '1') then 		
-        alertaCaixaB <= '0';    -- Alerta que está cheia
-        alertaBomba <= '0';	-- Desliga a bomba
+        alertaCaixaB <= '1';    -- Alerta que está cheia
+        alertaBombaInterno <= '0';	-- Desliga a bomba
+    else
+	alertaCaixaB <= '0';
 
-      end if;
- end process;
+    end if;
+  end process;
 end architecture;
