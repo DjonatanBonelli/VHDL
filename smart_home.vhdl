@@ -17,8 +17,8 @@ entity Casa is
     -- Sensores adicionais
     crepuscular: in  std_logic;
     chuva: in  std_logic;
-    temp1: in std_logic_vector(5 downto 0);
-    temp2: in std_logic_vector(5 downto 0);
+    temp1: in std_logic_vector(6 downto 0);
+    temp2: in std_logic_vector(6 downto 0);
     nivelAguaA: in std_logic_vector(3 downto 0); 
     AguaB: in std_logic;
     
@@ -27,7 +27,7 @@ entity Casa is
     alertaJanela: out std_logic;
     alertaChuva: out std_logic;
     alertaNoiteJanela: out std_logic;
-    alertaTemperatura: out std_logic;
+    mediaTemperatura: out std_logic_vector(3 downto 0);
     alertaBomba: out std_logic;
     alertaEletrovalvula: out std_logic;
     alertaCaixaB: out std_logic;
@@ -39,11 +39,32 @@ architecture Behavioral of Casa is
   signal alertaBombaInterno : std_logic := '1';
 
 begin
-  alertaBomba <= alertaBombaInterno;	
+  alertaBomba <= alertaBombaInterno;		
 
   process (janela1, janela2, janela3, porta, portaTrancada, modoSeguro,
-           crepuscular, chuva, temp1, temp2, nivelAguaA, AguaB)
-  begin
+           crepuscular, chuva, temp1, temp2, nivelAguaA, AguaB, alertaBombaInterno)
+  
+  variable vl1 : integer range  -10 to 50;
+  variable vl2 : integer range  -10 to 50;
+  variable vl_avg : integer range  -20 to 100;
+ 
+ begin
+	
+        vl1 := to_integer(signed(temp1));
+        vl2 := to_integer(signed(temp2));
+
+        vl_avg := (vl1+vl2);
+
+        if vl_avg < 0 then
+            mediaTemperatura <= "0001";
+        elsif vl_avg < 15 then 
+            mediaTemperatura <= "0010";
+        elsif vl_avg < 20 then
+            mediaTemperatura <= "0100";
+	ELSE 
+	        mediaTemperatura <= "1000";
+        end if;
+
     -- Verifica se alguma janela está aberta e o modo seguro está ativado
     if (modoSeguro = '1' and ((janela1 = '1' or janela2 = '1' or janela3 = '1') or (porta = '1' and portaTrancada = '0'))) then
       alertaPortaJanela <= '1';
@@ -77,13 +98,6 @@ begin
       alertaNoiteJanela <= '1';
     else
       alertaNoiteJanela <= '0';
-    end if;
-
-    -- Verifica se alguma janela está aberta e a temperatura está abaixo de 15°C
-    if ((janela1 = '1' or janela2 = '1' or janela3 = '1') and ((to_integer(unsigned(temp1)) < 15) or (to_integer(unsigned(temp2)) < 15)))then
-      alertaTemperatura <= '1';
-    else
-      alertaTemperatura <= '0';
     end if;
 
     -- Liga a eletroválvula
