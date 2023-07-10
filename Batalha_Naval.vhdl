@@ -1,52 +1,62 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use ieee.std_logic_unsigned.all;
 
 -- Entidade principal
 ENTITY BN IS
     PORT(
-        --Reinicia o jogo
-        reset : IN STD_LOGIC;
 
-        --Posicao escolhida pelo jogador para atacar
-        escolha_jogador : IN STD_LOGIC_VECTOR(3 downto 0);
+---------------------------------------------------------
 
-        -- Codificacao do barco sendo inserido
-        codificacao_barco_inserido : IN STD_LOGIC_VECTOR(3 downto 0); 
+        -- BOTÕES
+        -- Reset: 0
+        -- Clock: 3
 
-        -- Orientacao do barco 3, 0 = HORIZONTAL, 1 = VERTICAL
-        orientacao: IN STD_LOGIC;
+        key : IN STD_LOGIC_VECTOR(3 downto 0);
 
-        -- Número do barco a ser inserido, sendo [1,0,0] = barco1, [0,1,0] = barco2, [0,0,1] = barco3
-        barco: IN STD_LOGIC_VECTOR(2 downto 0);
+--------------------------------------------------------
 
-        -- Modo atual. 0 = Inserir barcos, 1 = Modo de jogo
-        modo: IN STD_LOGIC;
+        -- ALAVANCAS
+        -- Barco: (9 - 7)   [Número do barco a ser inserido, sendo [1,0,0] = barco1, [0,1,0] = barco2, [0,0,1] = barco3]
+        -- Codificação do Barco Inserido: (6 - 3) [Modo de Jogo: 0]     
+        -- Escolha do Jogador: (6 - 3) [Modo de Jogo: 1]
+        -- Orientação: 2    [Orientacao do barco 3, 0 = HORIZONTAL, 1 = VERTICAL]
+        -- Modo de Jogo: 0  [Modo atual. 0 = Inserir barcos, 1 = Modo de jogo]
 
-        clock: IN STD_LOGIC;
+        sw : IN STD_LOGIC_VECTOR(9 downto 0);
 
-        -- Ativa quando um input é inválido
-        input_invalido: OUT STD_LOGIC;
+-------------------------------------------------------
 
-        -- Acende caso tenha acertado o alvo
-        acertou: OUT STD_LOGIC;
+        -- LEDS VERDES
+        -- Acertou: 7
+        -- Errou: 6
+        ledg : OUT STD_LOGIC_VECTOR(7 downto 0);
 
-        -- Acende caso tenha errado o alvo
-        errou: OUT STD_LOGIC;
+-------------------------------------------------------
 
-        -- Exibe a quantidade de jogadas restantes
-        jogadas_restantes: OUT STD_LOGIC_VECTOR(2 downto 0);
+        -- LEDS VERMELHOS
+        -- Input Inválido: 9
+        ledr : OUT STD_LOGIC_VECTOR(9 downto 0);
 
-        --Exibe a quantidade de acertos necessários
-        acertos_restantes: OUT STD_LOGIC_VECTOR(2 downto 0);
+-------------------------------------------------------
 
-        --Saidas de debug (apagar dps)
-        posicao1: OUT STD_LOGIC_VECTOR(3 downto 0);
-        posicao2: OUT STD_LOGIC_VECTOR(3 downto 0); 
-        posicao3: OUT STD_LOGIC_VECTOR(3 downto 0); 
-        posicao4: OUT STD_LOGIC_VECTOR(3 downto 0);
-        linhaOut: OUT STD_LOGIC_VECTOR(1 downto 0);
-        colunaOut: OUT STD_LOGIC_VECTOR(1 downto 0)
+        -- Zero: "11111100"
+        -- Um: "01100000"
+        -- Dois: "11011010"
+        -- Três: "11110010"
+        -- Quatro: "01100110"
+        -- Cinco: "10110110"
+        -- Seis: "10111110"
+
+        -- DISPLAY ESQUERDA
+        jogadas_restantes: OUT STD_LOGIC_VECTOR(7 downto 0);    --Exibe a quantidade de jogadas restantes
+
+        -- DISPLAY DIREITA
+        acertos_restantes: OUT STD_LOGIC_VECTOR(7 downto 0)    --Exibe a quantidade de acertos necessários
+
+-------------------------------------------------------
+
     );
 END BN;
 
@@ -54,9 +64,9 @@ END BN;
 -- Cria tabuleiro
 ARCHITECTURE Behavior_Tabuleiro OF BN IS 
 
-                                    -- indices da matriz (3 em inteiro)            -- Conteudo do indice (vetor de 4 bits)
+--                                  indices da matriz (3 em inteiro)               Conteudo do indice (vetor de 4 bits)
     TYPE matriz_tabuleiro IS ARRAY (natural range 0 to 3, natural range 0 to 3) of std_logic_vector(3 downto 0);
-    SIGNAL matriz : matriz_tabuleiro;   -- Cria matriz
+    SIGNAL matriz : matriz_tabuleiro;   
 
 BEGIN
 
@@ -78,7 +88,7 @@ BEGIN
     matriz(3, 2) <= "1010";
     matriz(3, 3) <= "1100";
 
-    PROCESS (clock, reset)
+    PROCESS (key(3), key(0))    -- Clock e Reset
 
     --Para salvar a codificacao das posicoes escolhidas
 	variable pos1 : STD_LOGIC_VECTOR(3 downto 0);
@@ -106,13 +116,13 @@ BEGIN
     BEGIN
 
     -- Reinicia o jogo, caso o reset seja pressionado ou as jogadas acabem ou acerte todos os pontos
-    IF (reset = '1') or (jogadas = 0) or (acertos_necessarios = 0) then
-        input_invalido <= '0';
-        acertou <= '0';
-        errou <= '0';     
-        jogadas_restantes <= "000";
-        acertos_restantes <= "000";
-        acertos := "0000";
+    IF (key(0) = '1') or (jogadas = 0) or (acertos_necessarios = 0) then
+        ledr(9) <= '0';
+        ledg(7) <= '0';     -- Acertou 
+        ledg(6) <= '0';     -- Errou     
+        jogadas_restantes <= "000";     -- Display 1
+        acertos_restantes <= "000";     -- Display 2
+        acertos := "0000";      
         pos1 := "0000";
         pos2 := "0000";
         pos3 := "0000";
@@ -121,67 +131,67 @@ BEGIN
         acertos_necessarios := 4;
 
     -- Executa com o clock
-    ELSIF (Clock'EVENT AND Clock = '1') then
+    ELSIF (key(3)'EVENT AND key(3) = '1') then
 
         -- Reset das saídas
-        input_invalido <= '0';
-        acertou <= '0';
-        errou <= '0';
+        ledr(9) <= '0';
+        ledg(7) <= '0';
+        ledg(6) <= '0';
 
         -- Codificacao para o modo 0, inserir barcos
-        IF modo = '0' then
+        IF sw(0) = '0' then
 
             -- Impede que sejam inseridos barcos em posições ja ocupadas
-            IF (pos1 = codificacao_barco_inserido) or (pos2 = codificacao_barco_inserido) or (pos3 = codificacao_barco_inserido) or (pos4 = codificacao_barco_inserido) then
-                input_invalido <= '1';
-            -- Codificacao para o barco 1
-            ELSIF barco = "100" then
+            IF (pos1 = (sw(6) & sw(5) & sw(4) & sw(3))) or (pos2 = (sw(6) & sw(5) & sw(4) & sw(3))) or (pos3 = (sw(6) & sw(5) & sw(4) & sw(3))) or (pos4 = (sw(6) & sw(5) & sw(4) & sw(3))) then
+                ledr(9) <= '1';   -- Input Inválido
 
+            -- Codificacao para o barco 1
+            ELSIF (sw(9) = '1') and (sw(8) = '0') and (sw(7) = '0') then
                 --Atribui diretamente à variavel
-                pos1 := codificacao_barco_inserido;
+                pos1 := (sw(6) & sw(5) & sw(4) & sw(3));
 
             -- Codificacao para o barco 2
-            ELSIF barco = "010" then
+            ELSIF (sw(9) = '0') and (sw(8) = '1') and (sw(7) = '0') then
 
                 --Atribui diretamente à variavel
-                pos2 := codificacao_barco_inserido;
+                pos2 := (sw(6) & sw(5) & sw(4) & sw(3));
 
             -- Codificacao para o barco 3
-            ELSIF barco = "001" then
+            ELSIF (sw(9) = '0') and (sw(8) = '0') and (sw(7) = '1') then
                 --Codificacao para barco horizontal
-                IF orientacao = '0' then
+                IF sw(2) = '0' then
 
                     -- Verifica se a posicao e valida
-                    IF (codificacao_barco_inserido = "0011") or (codificacao_barco_inserido = "1011") or (codificacao_barco_inserido = "0010") or (codificacao_barco_inserido = "1100") then
-                        input_invalido <= '1';
+                    IF (sw(6) = '0' and sw(5) = '0' and sw(4) = '1' and sw(3) = '1')or (sw(6) = '1' and sw(5) = '0' and sw(4) = '1' and sw(3) = '1') or (sw(6) = '0' and sw(5) = '0' and sw(4) = '1' and sw(3) = '0') or (sw(6) = '1' and sw(5) = '1' and sw(4) = '0' and sw(3) = '0') then
+                        ledr(9) <= '1';
                     else
                         --Atribui diretamente a variavel
-                        pos3 := codificacao_barco_inserido;
+                        pos3 := (sw(6) & sw(5) & sw(4) & sw(3));
 
                         --Encontra a pos4
-                        IF codificacao_barco_inserido = matriz(0,0) then
+                        IF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(0,0) then
                             pos4 := matriz(0,1);
-                        ELSIF codificacao_barco_inserido = matriz(0,1) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(0,1) then
                             pos4 := matriz(0,2);
-                        ELSIF codificacao_barco_inserido = matriz(0,2) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(0,2) then
                             pos4 := matriz(0,3);
-                        ELSIF codificacao_barco_inserido = matriz(1,0) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(1,0) then
                             pos4 := matriz(1,1);
-                        ELSIF codificacao_barco_inserido = matriz(1,1) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(1,1) then
                             pos4 := matriz(1,2);
-                        ELSIF codificacao_barco_inserido = matriz(1,2) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(1,2) then
                             pos4 := matriz(1,3);
-                        ELSIF codificacao_barco_inserido = matriz(2,0) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(2,0) then
                             pos4 := matriz(2,1);
-                        ELSIF codificacao_barco_inserido = matriz(2,1) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(2,1) then
                             pos4 := matriz(2,2);
-                        ELSIF codificacao_barco_inserido = matriz(2,2) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(2,2) then
                             pos4 := matriz(2,3);
-                        ELSIF codificacao_barco_inserido = matriz(3,0) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(3,0) then
                             pos4 := matriz(3,1);
-                        ELSIF codificacao_barco_inserido = matriz(3,1) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(3,1) then
                             pos4 := matriz(3,2);
-                        ELSIF codificacao_barco_inserido = matriz(3,2) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(3,2) then
                             pos4 := matriz(3,3);
                         END IF;
 
@@ -189,36 +199,36 @@ BEGIN
                 --Codificacao para barco vertical
                 else
                     -- Verifica se a posicao e valida
-                    IF (codificacao_barco_inserido = "0101") or (codificacao_barco_inserido = "1111") or (codificacao_barco_inserido = "1010") or (codificacao_barco_inserido = "1100") then
-                        input_invalido <= '1';
+                    IF (sw(6) = '0' and sw(5) = '1' and sw(4) = '0' and sw(3) = '1') or (sw(6) = '1' and sw(5) = '1' and sw(4) = '1' and sw(3) = '1') or (sw(6) = '1' and sw(5) = '0' and sw(4) = '1' and sw(3) = '0') or (sw(6) = '1' and sw(5) = '1' and sw(4) = '0' and sw(3) = '0') then
+                        ledr(9) <= '1';
                     else
                         --Atribui diretamente a variavel
-                        pos3 := codificacao_barco_inserido;
+                        pos3 := (sw(6) & sw(5) & sw(4) & sw(3));
 
                         --Encontra a pos4
-                        IF codificacao_barco_inserido = matriz(0,0) then
+                        IF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(0,0) then
                             pos4 := matriz(1,0);
-                        ELSIF codificacao_barco_inserido = matriz(1,0) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(1,0) then
                             pos4 := matriz(2,0);
-                        ELSIF codificacao_barco_inserido = matriz(2,0) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(2,0) then
                             pos4 := matriz(3,0);
-                        ELSIF codificacao_barco_inserido = matriz(0,1) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(0,1) then
                             pos4 := matriz(1,1);
-                        ELSIF codificacao_barco_inserido = matriz(1,1) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(1,1) then
                             pos4 := matriz(2,1);
-                        ELSIF codificacao_barco_inserido = matriz(2,1) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(2,1) then
                             pos4 := matriz(3,1);
-                        ELSIF codificacao_barco_inserido = matriz(0,2) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(0,2) then
                             pos4 := matriz(1,2);
-                        ELSIF codificacao_barco_inserido = matriz(1,2) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(1,2) then
                             pos4 := matriz(2,2);
-                        ELSIF codificacao_barco_inserido = matriz(2,2) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(2,2) then
                             pos4 := matriz(3,2);
-                        ELSIF codificacao_barco_inserido = matriz(0,3) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(0,3) then
                             pos4 := matriz(1,3);
-                        ELSIF codificacao_barco_inserido = matriz(1,3) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(1,3) then
                             pos4 := matriz(2,3);
-                        ELSIF codificacao_barco_inserido = matriz(2,3) then
+                        ELSIF (sw(6) & sw(5) & sw(4) & sw(3)) = matriz(2,3) then
                             pos4 := matriz(3,3);
                         END IF;
                     END IF;
@@ -231,60 +241,79 @@ BEGIN
         -- Codificacao para o modo 1, modo de jogo
         else
             -- Converte a escolha para dois inteiros (porque esta invertido? porque Deus quis assim)
-            colunaVet(0) := escolha_jogador(0);
-            colunaVet(1) := escolha_jogador(1);
-            linhaVet(0) := escolha_jogador(2);
-            linhaVet(1) := escolha_jogador(3);
+            colunaVet(0) := sw(3);
+            colunaVet(1) := sw(4);
+            linhaVet(0) := sw(5);
+            linhaVet(1) := sw(6);
             linha := to_integer((unsigned(linhaVet)));
             coluna := to_integer((unsigned(colunaVet)));
             
             --Verifica se acertou ou errou e faz as alterações devidas
             IF (matriz(linha, coluna) = pos1 and acertos(0) = '0') then
-                acertou <= '1';
+                ledg(7) <= '1';
                 acertos(0) := '1';
                 acertos_necessarios := acertos_necessarios - 1;
                 IF jogadas > 1 then
                     jogadas := jogadas - 1;
                 END IF;
             ELSIF (matriz(linha, coluna) = pos2 and acertos(1) = '0') then
-                acertou <= '1';
+                ledg(7)  <= '1';
                 acertos(1) := '1';
                 acertos_necessarios := acertos_necessarios - 1;
                 IF jogadas > 1 then
                     jogadas := jogadas - 1;
                 END IF;
             ELSIF (matriz(linha, coluna) = pos3 and acertos(2) = '0') then
-                acertou <= '1';
+                ledg(7)  <= '1';
                 acertos(2) := '1';
                 acertos_necessarios := acertos_necessarios - 1;
                 IF jogadas > 1 then
                     jogadas := jogadas - 1;
                 END IF;
             ELSIF (matriz(linha, coluna) = pos4 and acertos(3) = '0') then
-                acertou <= '1';
+                ledg(7)  <= '1';
                 acertos(3) := '1';
                 acertos_necessarios := acertos_necessarios - 1;
                 IF jogadas > 1 then
                     jogadas := jogadas - 1;
                 END IF;
             ELSE 
-                errou <= '1';
+                ledg(6)  <= '1';    -- Errou
                 jogadas := jogadas - 1;
             END IF;
 
         END IF; --MODO
-        
-        --Saídas de debug
-        posicao1 <= pos1;
-        posicao2 <= pos2;
-        posicao3 <= pos3;
-        posicao4 <= pos4;
-        linhaOut <= linhaVet;
-        colunaOut <= colunaVet;
 
-        -- Convertendo as variaveis para o tipo STD_LOGIC_VECTOR e atribuindo as saidas
-        jogadas_restantes <= std_logic_vector(to_unsigned(jogadas, jogadas_restantes'length));
-        acertos_restantes <= std_logic_vector(to_unsigned(acertos_necessarios, acertos_restantes'length));
+        -- Atribui saídas ao display de 7 segmentos
+        if jogadas = 6 then
+            display1 <= "10111110";
+        elsif jogadas = 5 then
+            display1 <= "10110110";
+        elsif jogadas = 4 then
+            display1 <= "01100110";
+        elsif jogadas = 3 then
+            display1 <= "11110010";
+        elsif jogadas = 2 then
+            display1 <= "01100000";
+        elsif jogadas = 1 then
+            display1 <= "11011010";
+        elsif jogadas = 0 then
+            display1 <= "11111100";  
+            ledr <= "1111111111";   -- Efeito de derrota                      
+        end if;
+
+        if acertos_necessarios = 4 then
+            display <= "01100110";
+        elsif jogadas = 3 then
+            display <= "11110010";
+        elsif jogadas = 2 then
+            display <= "01100000";
+        elsif jogadas = 1 then
+            display <= "11011010";
+        elsif jogadas = 0 then
+            display <= "11111100";    
+            ledg <= "11111111";     -- Efeito de vitória
+        end if;
 
     END IF; --CLOCK
     END PROCESS;
