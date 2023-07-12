@@ -50,7 +50,7 @@ ENTITY BatalhaNaval IS
         -- Seis: "0000010"
 
         -- hex0 ESQUERDA
-        hex3: OUT STD_LOGIC_VECTOR(6 downto 0);    -- "J"
+        hex3: OUT STD_LOGIC_VECTOR(6 downto 0);    -- "C" 
 
 		  hex2: OUT STD_LOGIC_VECTOR(6 downto 0);    -- Exibe a quantidade de jogadas restantes
 		  hex1: OUT STD_LOGIC_VECTOR(6 downto 0);    -- "A"
