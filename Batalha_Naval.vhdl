@@ -41,17 +41,20 @@ ENTITY BatalhaNaval IS
 
 -------------------------------------------------------
 
-        -- Zero: "1111110"
-        -- Um: "0110000"
-        -- Dois: "1101101"
-        -- Três: "1111001"
-        -- Quatro: "0110011"
-        -- Cinco: "1011011"
-        -- Seis: "1011111"
+        -- Zero: "0111111"
+        -- Um: "1111001"
+        -- Dois: "0100100"
+        -- Três: "0110000"
+        -- Quatro: "0011001"
+        -- Cinco: "0010010"
+        -- Seis: "0000010"
 
         -- hex0 ESQUERDA
-        hex1: OUT STD_LOGIC_VECTOR(6 downto 0);    --Exibe a quantidade de jogadas restantes
+        hex3: OUT STD_LOGIC_VECTOR(6 downto 0);    -- "J"
 
+		  hex2: OUT STD_LOGIC_VECTOR(6 downto 0);    -- Exibe a quantidade de jogadas restantes
+		  hex1: OUT STD_LOGIC_VECTOR(6 downto 0);    -- "A"
+		  
         -- hex0 DIREITA
         hex0: OUT STD_LOGIC_VECTOR(6 downto 0)    --Exibe a quantidade de acertos necessários
 
@@ -115,19 +118,24 @@ BEGIN
    variable coluna : integer;
 
    --Armazena a quantidade de jogadas restantes
-   variable jogadas : integer := 6;
-
+   variable jogadas : integer range -1 to 6;
+	
    --Armazena a quantidade de acertos necessários
-   variable acertos_necessarios : integer := 4;
+   variable acertos_necessarios : integer range 0 to 4;
+	
+	--Verifica se é possivel jogar com as posições atuais
+	variable verifica_posicoes : STD_LOGIC := '1';
 
     BEGIN
 
     -- Reinicia o jogo, caso o reset seja pressionado ou as jogadas acabem ou acerte todos os pontos
-    IF (key(0) = '0') or (jogadas = 0) or (acertos_necessarios = 0) then
-        ledr <= "0000000001";
+    IF (key(0) = '0') or (jogadas = -1)then
+        ledr <= "0000000000";
         ledg <= "00000000";     -- Acertou  
-        hex1 <= "0000000";     -- hex1
-        hex0 <= "1111111";     -- hex2
+	    hex3 <= "1100000";
+        hex2 <= "0000010";     -- hex3
+		hex1 <= "0001000";
+        hex0 <= "0011001";     -- hex2
         acertos := "0000";
         pos1 := "0000";
         pos2 := "0000";
@@ -135,18 +143,18 @@ BEGIN
         pos4 := "0000";
         jogadas := 6;
         acertos_necessarios := 4;
+		verifica_posicoes := '1';
 
     -- Executa com o clock
     ELSIF (key(3)'EVENT AND key(3) = '0') then
 
         -- Reset das saídas
-        ledr(9) <= '0';
+        ledr(0) <= '0';
         ledg(7) <= '0';
-        ledg(6) <= '0';
-
+        ledr(9) <= '0';
 		
         -- Codificacao para o modo 0, inserir barcos
-        IF sw(0) = '0' then
+        IF (sw(0) = '0') then
 
             -- Impede que sejam inseridos barcos em posições ja ocupadas
             IF (pos1 = input_usuario) or (pos2 = input_usuario) or (pos3 = input_usuario) or (pos4 = input_usuario) then
@@ -246,7 +254,7 @@ BEGIN
 
 
         -- Codificacao para o modo 1, modo de jogo
-        else
+        ELSIF (sw(0) = '1' and verifica_posicoes = '0') then
             -- Converte a escolha para dois inteiros (porque esta invertido? porque Deus quis assim)
             colunaVet(0) := sw(3);
             colunaVet(1) := sw(4);
@@ -285,7 +293,7 @@ BEGIN
                     jogadas := jogadas - 1;
                 END IF;
             ELSE 
-                ledg(6)  <= '1';    -- Errou
+                ledr(0)  <= '1';    -- Errou
                 jogadas := jogadas - 1;
             END IF;
 
@@ -293,35 +301,63 @@ BEGIN
 
         -- Atribui saídas ao hex0 de 7 segmentos
         if jogadas = 6 then
-            hex1 <= "1011111";
+            hex2 <= "0000010";
         elsif jogadas = 5 then
-            hex1 <= "1011011";
+            hex2 <= "0010010";
         elsif jogadas = 4 then
-            hex1 <= "0110011";
+            hex2 <= "0011001";
         elsif jogadas = 3 then
-            hex1 <= "1111001";
+            hex2 <= "0110000";
         elsif jogadas = 2 then
-            hex1 <= "0110000";
+            hex2 <= "0100100";
         elsif jogadas = 1 then
-            hex1 <= "1101101";
+            hex2 <= "1111001";
         elsif jogadas = 0 then
-            hex1 <= "1111110";  
-            ledr <= "1111111111";   -- Efeito de derrota                      
+            hex2 <= "0111111";
+            ledr <= "1111111111";   -- Efeito de derrota  
+			ledg <= "00000000";				
         end if;
 
         if acertos_necessarios = 4 then
-            hex0 <= "0110011";
-        elsif jogadas = 3 then
-            hex0 <= "1111001";
-        elsif jogadas = 2 then
+            hex0 <= "0011001";
+        elsif acertos_necessarios = 3 then
             hex0 <= "0110000";
-        elsif jogadas = 1 then
-            hex0 <= "1101101";
-        elsif jogadas = 0 then
-            hex0 <= "1111110";    
-            ledg <= "11111111";     -- Efeito de vitória
+        elsif acertos_necessarios = 2 then
+            hex0 <= "0100100";
+        elsif acertos_necessarios = 1 then
+            hex0 <= "1111001";
+        elsif acertos_necessarios = 0 then
+            hex0 <= "0111111";
+            ledg <= "11111111";
+				ledr <= "0000000000";				-- Efeito de vitória
+				verifica_posicoes := '1';
+        end if;
+
+        --Verifica se as posições inseridas são válidas. Como o valor pos padrao é "0000" e é impossível inserir posições duplicadas, se utiliza disso para verificar.
+		if (pos1 = "0000") then
+            if (pos2 /= "0000") and (pos3 /= "0000") and (pos4 /= "0000") then
+                verifica_posicoes := '0';
+            end if;
+		elsif (pos2 = "0000") then
+            if (pos1 /= "0000") and (pos3 /= "0000") and (pos4 /= "0000") then
+                verifica_posicoes := '0';
+            end if;
+		elsif (pos3 = "0000") then
+            if (pos2 /= "0000") and (pos1 /= "0000") and (pos4 /= "0000") then
+                verifica_posicoes := '0';
+            end if;
+		elsif (pos4 = "0000") then
+            if (pos2 /= "0000") and (pos3 /= "0000") and (pos1 /= "0000") then
+                verifica_posicoes := '0';
+            end if;
+        else
+            verifica_posicoes := '0';
         end if;
 
     END IF; --CLOCK
+	 
+	 --Exibe se é possível jogar ou não
+	 ledr(8) <= verifica_posicoes;
+	 
     END PROCESS;
 END Behavior_Tabuleiro;
